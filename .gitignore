@@ -1,0 +1,6 @@
+.cache
+.idea
+.vscode
+Build*
+Testing
+compile_commands.json
