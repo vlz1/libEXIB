@@ -168,10 +168,10 @@ int Test_EXIB_ENC_Encode_IntArray()
         printf("TEST: \tERROR: Failed to create array!\n");
         return 1;
     }
-    EXIB_ENC_ArrayAppend(array, (EXIB_Value){ .int32 = 0xdeadbeef });
-    EXIB_ENC_ArrayAppend(array, (EXIB_Value){ .int32 = 0xdeadc0de });
-    EXIB_ENC_ArrayAppend(array, (EXIB_Value){ .int32 = 0xc001c0de });
-    EXIB_ENC_ArrayAppend(array, (EXIB_Value){ .int32 = 0xbeefb00b });
+    EXIB_ENC_ArrayAppend(array, (EXIB_Value){ .uint32 = 0xdeadbeef });
+    EXIB_ENC_ArrayAppend(array, (EXIB_Value){ .uint32 = 0xdeadc0de });
+    EXIB_ENC_ArrayAppend(array, (EXIB_Value){ .uint32 = 0xc001c0de });
+    EXIB_ENC_ArrayAppend(array, (EXIB_Value){ .uint32 = 0xbeefb00b });
 
     EXIB_Header* header = EXIB_ENC_Encode(ctx);
     if (EXIB_CheckHeader(header))
@@ -241,7 +241,17 @@ int Test_EXIB_ENC_Encode_Strings()
                                                   "string2",
                                                   EXIB_TYPE_UINT16,
                                                   L"Not a fan of UTF-16!");
+    EXIB_ENC_Array* array1 = EXIB_ENC_AddArray(ctx,
+                                               NULL,
+                                               "array1",
+                                               EXIB_TYPE_UINT32);
 
+    EXIB_Value value;
+    for (int i = 0; i < 8; ++i)
+    {
+        value.int32 = 32 + (32 * i);
+        EXIB_ENC_ArrayAppend(array1, value);
+    }
 
     EXIB_Header* header = EXIB_ENC_Encode(ctx);
     if (EXIB_CheckHeader(header))

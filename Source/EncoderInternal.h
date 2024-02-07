@@ -47,6 +47,7 @@ typedef struct _EXIB_ENC_Array
     EXIB_ENC_Object  object; // An array is basically just an object. We'll reuse the `children` field.
     uint32_t         elementCount; // Number of elements in array.
     uint32_t         elementCapacity; // Size of element buffer.
+    int              isString; // 1 if the array is a string.
     EXIB_Value*      valueElements; // Regular values are stored in a vector.
 } EXIB_ENC_Array;
 

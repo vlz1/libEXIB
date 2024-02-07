@@ -13,19 +13,19 @@
 
 static const char* s_TypeNames[16] = {
     NULL,
-    ":i8",
-    ":u8",
-    ":i16",
-    ":u16",
-    ":i32",
-    ":u32",
-    ":i64",
-    ":u64",
-    ":f32",
-    ":f64",
+    "i8",
+    "u8",
+    "i16",
+    "u16",
+    "i32",
+    "u32",
+    "i64",
+    "u64",
+    "f32",
+    "f64",
     NULL,
-    ":string",
-    ":blob",
+    NULL,
+    "blob",
     NULL,
     NULL
 };
@@ -177,7 +177,6 @@ void EXIB_DCL_EmitValue(EXIB_DCL_Context* dclCtx, EXIB_TypedValue* typedValue)
             return;
 
         case EXIB_TYPE_NULL:
-        case EXIB_TYPE_STRING:
         case EXIB_TYPE_ARRAY:
         case EXIB_TYPE_OBJECT:
             return;
@@ -189,41 +188,71 @@ void EXIB_DCL_EmitValue(EXIB_DCL_Context* dclCtx, EXIB_TypedValue* typedValue)
         EXIB_DCL_EmitUInt(dclCtx, ival);
 }
 
+void EXIB_DCL_EmitTypeName(EXIB_DCL_Context* dclCtx, EXIB_Type type, int isArray)
+{
+    const char* typeName = s_TypeNames[type];
+
+    if (typeName != NULL)
+    {
+        EXIB_DCL_Emit(dclCtx, ":"); // Colon to separate field name from type name.
+        if (isArray)
+        {
+            EXIB_DCL_Emit(dclCtx, "[");
+            EXIB_DCL_Emit(dclCtx, typeName);
+            EXIB_DCL_Emit(dclCtx, "]");
+        }
+        else
+        {
+            EXIB_DCL_Emit(dclCtx, typeName);
+        }
+    }
+
+    EXIB_DCL_Emit(dclCtx, "\": "); // Closing quote and colon of field declaration.
+}
+
 void EXIB_DCL_EmitObject(EXIB_DCL_Context* dclCtx, EXIB_DEC_Object* object, int indent, int depth);
 
 void EXIB_DCL_EmitField(EXIB_DCL_Context* dclCtx, EXIB_DEC_Object* parentObject, EXIB_DEC_Field field, int indent, int depth)
 {
     int innerIndent = (depth + 1) * indent;
-    EXIB_DEC_TString name = EXIB_DEC_GetFieldName(dclCtx->decoder, field);
-    const char* typeName = s_TypeNames[field->type];
+    EXIB_DEC_TString name = EXIB_DEC_FieldGetName(dclCtx->decoder, field);
 
     EXIB_DCL_EmitIndentation(dclCtx, innerIndent);
-    EXIB_DCL_Emit(dclCtx, "\"");
-    EXIB_DCL_EmitN(dclCtx, name->string, name->length);
-
-    // TODO: Handle type suffixes for arrays and strings
-    if (typeName != NULL)
-    {
-        EXIB_DCL_Emit(dclCtx, typeName);
-    }
-
-    EXIB_DCL_Emit(dclCtx, "\": ");
+    EXIB_DCL_Emit(dclCtx, "\""); // Opening quote of field name.
+    EXIB_DCL_EmitN(dclCtx, name->string, name->length); // Field name.
 
     if (field->type == EXIB_TYPE_OBJECT)
     {
+        EXIB_DCL_EmitTypeName(dclCtx, field->type, 0);
         EXIB_DCL_Emit(dclCtx, "{\n");
         
         EXIB_DEC_Object childObject = { };
-        EXIB_DEC_GetObject(dclCtx->decoder, field, &childObject);
+        EXIB_DEC_ObjectFromField(dclCtx->decoder, field, &childObject);
         EXIB_DCL_EmitObject(dclCtx, &childObject, indent, depth + 1);
 
         EXIB_DCL_EmitIndentation(dclCtx, innerIndent);
         EXIB_DCL_Emit(dclCtx, "}");
     }
+    else if (field->type == EXIB_TYPE_ARRAY)
+    {
+        EXIB_DEC_Array childArray = { };
+        EXIB_DEC_ArrayFromField(dclCtx->decoder, field, &childArray);
+        EXIB_DCL_EmitTypeName(dclCtx, childArray.object.objectPrefix.arrayType, 1);
+
+        size_t length;
+        EXIB_Value* value = EXIB_DEC_ArrayBegin(dclCtx->decoder, &childArray, &length);
+        for (int i = 0; i < length; ++i)
+        {
+            printf("[%d] = %c\n", i, value->uint16);
+            value = ((void*)value) + EXIB_DEC_ArrayGetStride(&childArray);
+        }
+    }
     else
     {
+        EXIB_DCL_EmitTypeName(dclCtx, field->type, 0);
+
         EXIB_TypedValue value;
-        if (EXIB_DEC_GetFieldValue(dclCtx->decoder, field, &value) == EXIB_TYPE_NULL)
+        if (EXIB_DEC_FieldGet(dclCtx->decoder, field, &value) == EXIB_TYPE_NULL)
         {
             EXIB_DCL_Emit(dclCtx, "NULL");
             return;
@@ -259,7 +288,7 @@ char* EXIB_DCL_Decompile(EXIB_Header* data, size_t size, EXIB_DEC_Error* errorOu
         return NULL;
 
     EXIB_DEC_Object* root = EXIB_DEC_GetRootObject(dclCtx.decoder);
-    EXIB_DEC_TString rootName = EXIB_DEC_GetFieldName(dclCtx.decoder, root->field);
+    EXIB_DEC_TString rootName = EXIB_DEC_FieldGetName(dclCtx.decoder, root->field);
     dclCtx.textBufferSize = EXIB_DCL_BUFFER_INCREMENT;
     dclCtx.textBuffer = EXIB_Calloc(dclCtx.textBufferSize, 1);
 

@@ -214,6 +214,7 @@ size_t EXIB_ENC_EncodeArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array, size_t
     // Write object prefix.
     EXIB_ObjectPrefix objectPrefix = {
         .arrayType = field->elementType,
+        .arrayString = array->isString,
         .size = (dataSize > UINT16_MAX)
     };
     ctx->encodeBuffer[offset++] = objectPrefix.byte;
@@ -261,7 +262,7 @@ size_t EXIB_ENC_EncodeObject(EXIB_ENC_Context* ctx, EXIB_ENC_Object* object, siz
 
         if (field->type == EXIB_TYPE_OBJECT)
             bytes = EXIB_ENC_EncodeObject(ctx, (EXIB_ENC_Object*)field, offset);
-        else if (field->type == EXIB_TYPE_STRING || field->type == EXIB_TYPE_ARRAY)
+        else if (field->type == EXIB_TYPE_ARRAY)
             bytes = EXIB_ENC_EncodeArray(ctx, (EXIB_ENC_Array*)field, offset);
         else
             bytes = EXIB_ENC_EncodeField(ctx, field, offset);

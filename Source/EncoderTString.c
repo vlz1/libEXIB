@@ -4,6 +4,11 @@
 #include <EXIB/Encoder.h>
 #include "EncoderInternal.h"
 
+/*
+ * TStrings (table strings) are stored in the string table,
+ * and are only used for field names.
+ */
+
 static EXIB_ENC_StringEntry* EXIB_ENC_AddTString(EXIB_ENC_Context* ctx, const char* str, uint32_t hash, uint32_t length);
 static EXIB_ENC_StringEntry* EXIB_ENC_FindTString(EXIB_ENC_Context* ctx, uint32_t hash);
 static int EXIB_ENC_StringInsertionIndex(EXIB_ENC_Context* ctx, uint32_t hash);

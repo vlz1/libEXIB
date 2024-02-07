@@ -149,7 +149,7 @@ int Test_EXIB_DEC_FindField_NumbersAndObjects()
     EXIB_DEC_Field field = EXIB_DEC_NextField(ctx, &object, NULL);
     while (field != NULL) 
     {
-        EXIB_DEC_TString name = EXIB_DEC_GetFieldName(ctx, field);
+        EXIB_DEC_TString name = EXIB_DEC_FieldGetName(ctx, field);
         printf("%.*s\n", name->length, name->string);
         field = EXIB_DEC_NextField(ctx, &object, field);
     }

@@ -118,7 +118,6 @@ enum class Type : uint8_t
     EXIB_TYPE_UINT64 = 8,
     EXIB_TYPE_FLOAT  = 9,
     EXIB_TYPE_DOUBLE = 10,
-    EXIB_TYPE_STRING = 12,
     EXIB_TYPE_BLOB   = 13,
     EXIB_TYPE_ARRAY  = 14,
     EXIB_TYPE_OBJECT = 15
@@ -145,9 +144,10 @@ an object prefix and 16-bit or 32-bit size.
 ```cpp
 struct ObjectPrefix
 {
-    uint8_t arrayType : 4;
-    uint8_t reserved  : 3;
-    uint8_t size      : 1;
+    uint8_t arrayType   : 4;
+    uint8_t arrayString : 1;
+    uint8_t reserved    : 2;
+    uint8_t size        : 1;
 };
 ```
 
@@ -184,7 +184,7 @@ This saves space and allows elements to be accessed via pointers into the
 decode buffer.
 
 ```
-    0x1E 0x0000  0x20   0x0004      0xAA 0xBB 0xCC 0xDD
+    0x1E 0x0000  0x02   0x0004      0xAA 0xBB 0xCC 0xDD
 [Prefix] [Name] [Obj] [Size16] [Array Elements (UINT8)]
 ```
 
@@ -193,12 +193,14 @@ prefixes when defined in arrays.
 
 ## Strings
 
-The `EXIB_TYPE_STRING` type makes no assumptions about character encoding,
-and represents a null-terminated array of any integral type. The "character"
-type is specified by the `arrayType` field of the object prefix.
+Strings are a subtype of `EXIB_TYPE_ARRAY`. They make no assumptions about character encoding,
+and represent a null-terminated array of any integral type. 
+The "character" type is specified by the `arrayType` field of the object prefix.
+To encode a string, simply encode an array of integers and set the `arrayString`
+of the object prefix.
 
 ```
-0x1C     0x0000  0x02   0x0006 0x48 0x65 0x6C 0x6C 0x6F 0x00
+0x1E     0x0000  0x12   0x0006 0x48 0x65 0x6C 0x6C 0x6F 0x00
 [Prefix] [Name] [Obj] [Size16]  'H'  'e'  'l'  'l'  'o'  '\0'
 ```
 
@@ -206,6 +208,9 @@ As you can see, the encoding of a string is nearly identical to an array.
 The main purpose of the string type is to disambiguate text data from
 other integer arrays, but it also allows strings to be accessed directly as a
 `const char*` into the decode buffer because of the added null-terminator.
+
+Strings **MUST** end with a terminator of their respective character type.
+For example, a string of `EXIB_TYPE_INT32` must have a 32-bit null-terminator.
 
 ## String Table
 

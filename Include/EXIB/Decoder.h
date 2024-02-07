@@ -14,14 +14,17 @@
 
 typedef enum
 {
-    EXIB_DEC_ERR_Success        = 0,
-    EXIB_DEC_ERR_InvalidHeader  = 1, // Header magic is wrong or fields are invalid.
-    EXIB_DEC_ERR_BufferTooSmall = 2, // Decode buffer is too small for operation.
-    EXIB_DEC_ERR_BadChecksum    = 3, // Header checksum is wrong.
-    EXIB_DEC_ERR_InvalidRoot    = 4, // Root field is not an object.
-    EXIB_DEC_ERR_OutOfBounds    = 5, // A size or offset points out of the decode buffer.
-    EXIB_DEC_ERR_ObjectExpected = 6, // An object was expected.
-    EXIB_DEC_ERR_ArrayExpected  = 7  // An array was expected.
+    EXIB_DEC_ERR_Success           = 0,
+    EXIB_DEC_ERR_InvalidHeader     = 1, // Header magic is wrong or fields are invalid.
+    EXIB_DEC_ERR_BufferTooSmall    = 2, // Decode buffer is too small for operation.
+    EXIB_DEC_ERR_BadChecksum       = 3, // Header checksum is wrong.
+    EXIB_DEC_ERR_InvalidRoot       = 4, // Root field is not an object.
+    EXIB_DEC_ERR_OutOfBounds       = 5, // A size or offset points out of the decode buffer.
+    EXIB_DEC_ERR_AggregateExpected = 6, // An aggregate type was expected.
+    EXIB_DEC_ERR_ObjectExpected    = 7, // An object was expected.
+    EXIB_DEC_ERR_ArrayExpected     = 8, // An array was expected.
+    EXIB_DEC_ERR_StringExpected    = 9, // A string was expected.
+    EXIB_DEC_ERR_InvalidArrayIndex = 10, // Array index out of bounds.
 } EXIB_DEC_Error;
 
 /** Opaque decoder context handle. */
@@ -39,9 +42,16 @@ typedef struct _EXIB_DEC_Object
     EXIB_DEC_Field field; // Object's field.
     uint32_t size; // Size of object data in bytes.
     uint8_t dataOffset; // Offset from `field` to beginning of object data.
-    uint8_t reserved0;
-    uint16_t reserved1;
+    EXIB_ObjectPrefix objectPrefix; // Original object prefix.
+    uint16_t reserved;
 } EXIB_DEC_Object;
+
+/** Container for a partially decoded array. */
+typedef struct _EXIB_DEC_Array
+{
+    EXIB_DEC_Object object;
+    uint32_t elements;
+} EXIB_DEC_Array;
 
 #define EXIB_DEC_INVALID_FIELD   ((EXIB_DEC_Field)NULL)
 #define EXIB_DEC_INVALID_STRING  ((EXIB_DEC_TString)NULL)
@@ -120,22 +130,14 @@ extern "C" {
      * @param field Decoder field.
      * @return Size of data in bytes (not including padding)
      */
-    size_t EXIB_DEC_GetFieldSize(EXIB_DEC_Field field);
-
-    /**
-     * Get the offset of a field relative to the beginning of the datum.
-     * @param ctx Decoder context.
-     * @param field Decoder field.
-     * @return Offset of field prefix.
-     */
-    size_t EXIB_DEC_GetFieldOffset(EXIB_DEC_Context* ctx, EXIB_DEC_Field field);
+    size_t EXIB_DEC_FieldGetSize(EXIB_DEC_Field field);
 
     /**
      * Get the type of a field.
      * @param field Decoder field.
      * @return Field type.
      */
-    EXIB_Type EXIB_DEC_GetFieldType(EXIB_DEC_Field field);
+    EXIB_Type EXIB_DEC_FieldGetType(EXIB_DEC_Field field);
 
     /**
      * Get the name of a field.
@@ -143,7 +145,7 @@ extern "C" {
      * @param field Decoder field.
      * @return Field name on success, EXIB_DEC_INVALID_STRING if no name is present.
      */
-    EXIB_DEC_TString EXIB_DEC_GetFieldName(EXIB_DEC_Context* ctx, EXIB_DEC_Field field);
+    EXIB_DEC_TString EXIB_DEC_FieldGetName(EXIB_DEC_Context* ctx, EXIB_DEC_Field field);
 
     /**
      * Get the type and value of a field.
@@ -152,16 +154,113 @@ extern "C" {
      * @param valueOut Pointer to TypedValue struct. Must not be NULL!
      * @return Type of value, or EXIB_TYPE_NULL if no value could be decoded.
      */
-    EXIB_Type EXIB_DEC_GetFieldValue(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_TypedValue* valueOut);
+    EXIB_Type EXIB_DEC_FieldGet(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_TypedValue* valueOut);
+
+    /**
+     * Check if the given field is one of the primitive types.
+     * @param field Decoder field.
+     * @return 1 if the field is an integer or float, 0 otherwise.
+     */
+    static inline int EXIB_DEC_FieldIsPrimitive(EXIB_DEC_Field field)
+    {
+        return (field->type >= EXIB_TYPE_INT8 && field->type <= EXIB_TYPE_DOUBLE);
+    }
+
+    /**
+     * Check if the given field is one of the aggregate types.
+     * @param field Decoder field.
+     * @return 1 if the field is an object or array, 0 otherwise.
+     */
+    static inline int EXIB_DEC_FieldIsAggregate(EXIB_DEC_Field field)
+    {
+        return (field->type == EXIB_TYPE_ARRAY || field->type == EXIB_TYPE_OBJECT);
+    }
+
+    /**
+     * Check if the given field is an object.
+     * @param field Decoder field.
+     * @return 1 if the field is an object, 0 otherwise.
+     */
+    static inline int EXIB_DEC_FieldIsObject(EXIB_DEC_Field field)
+    {
+        return field->type == EXIB_TYPE_OBJECT;
+    }
+
+    /**
+     * Check if the given field is an array.
+     * @param field Decoder field.
+     * @return 1 if the field is an array, 0 otherwise.
+     */
+    static inline int EXIB_DEC_FieldIsArray(EXIB_DEC_Field field)
+    {
+        return field->type == EXIB_TYPE_ARRAY;
+    }
 
     /**
      * Get an object from an object-typed field.
      * @param ctx Decoder context.
      * @param field Object-typed field.
      * @param objectOut Pointer to structure to receive object data.
-     * @return `objectOut` on success, NULL on error.
+     * @return Pointer to decoded object on success, NULL on error.
      */
-    EXIB_DEC_Object* EXIB_DEC_GetObject(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_DEC_Object* objectOut);
+    EXIB_DEC_Object* EXIB_DEC_ObjectFromField(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_DEC_Object* objectOut);
+
+    /**
+     * Get an array from an array-typed field.
+     * @param ctx Decoder context.
+     * @param field Array-typed field.
+     * @param arrayOut Pointer to structure to receive array data.
+     * @return Pointer to decoded array on success, NULL on error.
+     */
+    EXIB_DEC_Array* EXIB_DEC_ArrayFromField(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_DEC_Array* arrayOut);
+
+    /**
+     * Get the number of elements in an array.
+     * @param array Decoder array.
+     * @return Number of elements in array.
+     */
+    static inline size_t EXIB_DEC_ArrayGetLength(EXIB_DEC_Array* array)
+    {
+        return array->elements;
+    }
+
+    /**
+     * Get the element type of an array.
+     * @param array Decoder array.
+     * @return Element type.
+     */
+    static inline EXIB_Type EXIB_DEC_ArrayGetType(EXIB_DEC_Array* array)
+    {
+        return array->object.objectPrefix.arrayType;
+    }
+
+    /**
+     * Get the stride (distance between the beginning of each element) of an array.
+     * @param array Decoder array.
+     * @return Array stride, or 0 if the array is comprised of aggregate types.
+     */
+    static inline EXIB_Type EXIB_DEC_ArrayGetStride(EXIB_DEC_Array* array)
+    {
+        return EXIB_GetTypeSize(array->object.objectPrefix.arrayType);
+    }
+
+    /**
+     * Get a pointer to the first element of an array and retrieve the element count.
+     * @param ctx Decoder context.
+     * @param array Decoder array.
+     * @param lengthOut Pointer to variable to receive the array length.
+     * @return Pointer to the beginning of array[i], or NULL on error.
+     */
+    EXIB_Value* EXIB_DEC_ArrayBegin(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, size_t* lengthOut);
+
+    /**
+     * Get a pointer to element i of the given array.
+     * @param ctx Decoder context.
+     * @param array Decoder array.
+     * @param i Array index.
+     * @return Pointer to element at array[i], or NULL on error.
+     */
+    EXIB_Value* EXIB_DEC_ArrayLocateElement(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, size_t i);
 
     /**
      * Get the next field within an object.

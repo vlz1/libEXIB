@@ -109,7 +109,7 @@ void* EXIB_ENC_ArraySet(EXIB_ENC_Array* array, size_t index, EXIB_Value value)
     if (index >= array->elementCount)
         return NULL;
 
-    void* p = array->valueElements + (index * elementSize);
+    void* p = ((void*)array->valueElements) + (index * elementSize);
 
     if (elementSize == 1)
         *(uint8_t*)p = value.uint8;

@@ -1,6 +1,6 @@
 target_sources(EXIB PRIVATE Util.c AllocatorInternal.h Allocator.c
     EncoderInternal.h Encoder.c EncoderTString.c EncoderString.c EncoderObject.c EncoderArray.c
-    DecoderInternal.h Decoder.c DecoderString.c DecoderObject.c
+    DecoderInternal.h Decoder.c DecoderTString.c DecoderArray.c DecoderObject.c DecoderField.c
 
         )
 

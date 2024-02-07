@@ -59,11 +59,13 @@ typedef union _EXIB_ObjectPrefix
     struct
     {
         // Type of fields in array (if array = 1).
-        uint8_t arrayType : 4;
+        uint8_t arrayType   : 4;
+        // 1 if the array is a string.
+        uint8_t arrayString : 1;
         // Reserved for future use.
-        uint8_t reserved  : 3;
+        uint8_t reserved    : 2;
         // If 0, followed by 16-bit size. If 1, followed by 32 bit size.
-        uint8_t size      : 1;
+        uint8_t size        : 1;
     };
     uint8_t byte; // Object prefix as a byte.
 } EXIB_ObjectPrefix;
@@ -117,7 +119,6 @@ typedef enum _EXIB_Type
     EXIB_TYPE_UINT64 = 8,
     EXIB_TYPE_FLOAT  = 9,
     EXIB_TYPE_DOUBLE = 10,
-    EXIB_TYPE_STRING = 12,
     EXIB_TYPE_BLOB   = 13,
     EXIB_TYPE_ARRAY  = 14,
     EXIB_TYPE_OBJECT = 15
@@ -134,8 +135,7 @@ static inline int EXIB_GetTypeSize(EXIB_Type type)
         1, 1, 2, 2,
         4, 4, 8, 8,
         4, 8,
-        sizeof(exib_string_t),
-        0, 1, 0, 0
+        0, 0, 1, 0, 0
     };
     return TypeSizes[type];
 }
@@ -195,7 +195,7 @@ extern "C" {
 
     /**
      * Specify the memory allocation functions to be used by the library.
-     * WARNING: Invalidates all existing contexts!
+     * WARNING: Invalidates all existing contexts and allocations!
      * @param mallocFn malloc() function.
      * @param freeFn free() function.
      */

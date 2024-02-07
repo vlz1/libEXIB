@@ -29,6 +29,14 @@ EXIB_DEC_Error EXIB_DEC_SetError(EXIB_DEC_Context* ctx, EXIB_DEC_Error err);
 exib_string_t EXIB_DEC_GetFieldNameOffset(EXIB_DEC_Context* ctx, EXIB_DEC_Field field);
 
 /**
+ * Get the offset of a field relative to the beginning of the datum.
+ * @param ctx Decoder context.
+ * @param field Decoder field.
+ * @return Offset of field prefix.
+ */
+size_t EXIB_DEC_GetFieldOffset(EXIB_DEC_Context* ctx, EXIB_DEC_Field field);
+
+/**
  * Decode the size and data offset of an object. Also check bounds
  * to ensure object is valid.
  * @param ctx Decoder context.
@@ -36,7 +44,7 @@ exib_string_t EXIB_DEC_GetFieldNameOffset(EXIB_DEC_Context* ctx, EXIB_DEC_Field 
  * @param objectOut Pointer to structure to receive decoded object.
  * @return Decoder error state.
  */
-EXIB_DEC_Error EXIB_DEC_PartialDecodeObject(EXIB_DEC_Context* ctx, EXIB_DEC_Field objectField, EXIB_DEC_Object* objectOut);
+EXIB_DEC_Error EXIB_DEC_PartialDecodeAggregate(EXIB_DEC_Context* ctx, EXIB_DEC_Field objectField, EXIB_DEC_Object* objectOut);
 
 /**
  * Get a pointer to a string table entry from a string table offset.
@@ -46,4 +54,4 @@ EXIB_DEC_Error EXIB_DEC_PartialDecodeObject(EXIB_DEC_Context* ctx, EXIB_DEC_Fiel
  */
 EXIB_DEC_TString EXIB_DEC_GetStringFromOffset(EXIB_DEC_Context* ctx, exib_string_t stringOffset);
 
-#endif // _EXIB_ENCODER_INTERNAL_H
+#endif // _EXIB_DECODER_INTERNAL_H

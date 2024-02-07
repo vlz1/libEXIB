@@ -12,7 +12,7 @@ int EXIB_ENC_InitializeString(EXIB_ENC_Context* ctx,
 {
     EXIB_ENC_Field* field = &string->array.object.field;
     EXIB_ENC_InitializeField(ctx, field, parent, name,
-                             EXIB_TYPE_STRING);
+                             EXIB_TYPE_ARRAY);
 
     field->elementType = type;
 
@@ -76,6 +76,9 @@ EXIB_ENC_String* EXIB_ENC_AddString(EXIB_ENC_Context* ctx,
     // Allocate elements and copy string over.
     EXIB_ENC_ArrayResize(&string->array, length + 1);
     memcpy(EXIB_ENC_ArrayGetData(&string->array), str, (length + 1) * charSize);
+
+    // Designate the array as a string.
+    string->array.isString = 1;
 
     return string;
 }

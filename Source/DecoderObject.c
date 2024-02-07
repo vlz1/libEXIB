@@ -33,15 +33,18 @@ static uint32_t EXIB_DEC_ObjectRelativeOffset(EXIB_DEC_Object* object, EXIB_DEC_
     return (void*)field - start;
 }
 
-EXIB_DEC_Error EXIB_DEC_PartialDecodeObject(EXIB_DEC_Context* ctx, EXIB_DEC_Field objectField, EXIB_DEC_Object* objectOut)
+// Decode the prefix, name, and size of an aggregate type (object or array).
+EXIB_DEC_Error EXIB_DEC_PartialDecodeAggregate(EXIB_DEC_Context* ctx, EXIB_DEC_Field objectField, EXIB_DEC_Object* objectOut)
 {
     EXIB_FieldPrefix* field = (EXIB_FieldPrefix*)objectField;
     EXIB_ObjectPrefix* object = OBJECT_PREFIX(field);
     uint32_t objectSize;
     uint32_t sizeBytes;
 
-    if (field->type != EXIB_TYPE_OBJECT)
-        return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_ObjectExpected);
+    if (!EXIB_DEC_FieldIsAggregate(objectField))
+        return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_AggregateExpected);
+
+    // TODO: More bounds checking for aggregate decoding.
 
     sizeBytes = 2 + (object->size * 2);
     objectOut->dataOffset = 2 + (field->named * 2) + sizeBytes; // Field prefix + Object prefix + Name16 + Size16/32
@@ -57,11 +60,12 @@ EXIB_DEC_Error EXIB_DEC_PartialDecodeObject(EXIB_DEC_Context* ctx, EXIB_DEC_Fiel
 
     objectOut->field = field;
     objectOut->size = objectSize;
+    objectOut->objectPrefix = *object;
 
     return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_Success);
 }
 
-EXIB_DEC_Object* EXIB_DEC_GetObject(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_DEC_Object* objectOut)
+EXIB_DEC_Object* EXIB_DEC_ObjectFromField(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_DEC_Object* objectOut)
 {
     EXIB_FieldPrefix* prefix = (EXIB_FieldPrefix*)field;
 
@@ -73,13 +77,33 @@ EXIB_DEC_Object* EXIB_DEC_GetObject(EXIB_DEC_Context* ctx, EXIB_DEC_Field field,
 
     if (ctx->objectCache.field != field)
     {
-        if (EXIB_DEC_PartialDecodeObject(ctx, field, &ctx->objectCache) != EXIB_DEC_ERR_Success)
+        if (EXIB_DEC_PartialDecodeAggregate(ctx, field, &ctx->objectCache) != EXIB_DEC_ERR_Success)
             return NULL;
     }
     
     memcpy(objectOut, &ctx->objectCache, sizeof(EXIB_DEC_Object));
 
     return objectOut;
+}
+
+EXIB_DEC_Array* EXIB_DEC_ArrayFromField(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_DEC_Array* arrayOut)
+{
+    EXIB_FieldPrefix* prefix = (EXIB_FieldPrefix*)field;
+
+    if (prefix->type != EXIB_TYPE_ARRAY)
+    {
+        ctx->lastError = EXIB_DEC_ERR_ArrayExpected;
+        return NULL;
+    }
+
+    if (EXIB_DEC_PartialDecodeAggregate(ctx, field, &arrayOut->object) != EXIB_DEC_ERR_Success)
+        return NULL;
+
+    // Calculate element count.
+    int elementSize = EXIB_GetTypeSize(arrayOut->object.objectPrefix.arrayType);
+    arrayOut->elements = arrayOut->object.size ? (arrayOut->object.size / elementSize) : 0;
+
+    return arrayOut;
 }
 
 EXIB_DEC_Field EXIB_DEC_FirstField(EXIB_DEC_Context* ctx, EXIB_DEC_Object* object)
@@ -122,23 +146,18 @@ EXIB_DEC_Field EXIB_DEC_NextField(EXIB_DEC_Context* ctx, EXIB_DEC_Object* object
                 + EXIB_GetTypeSize(prefix->type);
     #endif
 
-    // Calculate how far the next field is.
-    if (prefix->type == EXIB_TYPE_OBJECT)
+    if (EXIB_DEC_FieldIsAggregate(field))
     {
         EXIB_ObjectPrefix* objectPrefix = (EXIB_ObjectPrefix*)(prefix + stride);
 
         // Partially decode object into object cache.
-        // Speeds up a potential GetObject call. 
-        if (EXIB_DEC_PartialDecodeObject(ctx, field, &ctx->objectCache) != EXIB_DEC_ERR_Success)
+        // Speeds up a potential GetObject call.
+        if (EXIB_DEC_PartialDecodeAggregate(ctx, field, &ctx->objectCache) != EXIB_DEC_ERR_Success)
             return EXIB_DEC_INVALID_FIELD;
-        
+
         stride += 1 // Object prefix
-                + 2 + (objectPrefix->size * 2) // Object size
-                + ctx->objectCache.size; // Object data
-    }
-    else if (prefix->type == EXIB_TYPE_ARRAY)
-    {
-        // TODO: Next array.
+                  + (2 + (objectPrefix->size * 2)) // Object size
+                  + ctx->objectCache.size; // Object data
     }
 
     next = field + stride;
@@ -194,7 +213,7 @@ EXIB_DEC_Error EXIB_DEC_FindObject(EXIB_DEC_Context* ctx,
     if (field == EXIB_DEC_INVALID_FIELD)
         return EXIB_DEC_GetLastError(ctx);
 
-    if (!EXIB_DEC_GetObject(ctx, field, objectOut))
+    if (!EXIB_DEC_ObjectFromField(ctx, field, objectOut))
         return EXIB_DEC_GetLastError(ctx);
     
     return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_Success);
