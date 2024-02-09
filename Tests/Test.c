@@ -11,9 +11,9 @@
 #include "Test.h"
 #include "Test_DEC.h"
 
-void dump(EXIB_Header* header, const char* file)
+void DumpDatum(EXIB_Header* header, const char* path)
 {
-    FILE* f = fopen(file, "wb");
+    FILE* f = fopen(path, "wb");
     fwrite(header, header->datumSize, 1, f);
     fclose(f);
 }
@@ -29,79 +29,7 @@ int CheckEncoderContext(EXIB_ENC_Context* ctx)
     return 0;
 }
 
-int Test_EXIB_ENC_CreateContext()
-{
-    EXIB_ENC_Context* ctx = EXIB_ENC_CreateContext(NULL);
 
-    if (CheckEncoderContext(ctx))
-        return 1;
-
-    EXIB_ENC_FreeContext(ctx);
-    return 0;
-}
-
-int Test_EXIB_ENC_Encode_EmptyRoot()
-{
-    EXIB_ENC_Context* ctx = EXIB_ENC_CreateContext(NULL);
-
-    if (CheckEncoderContext(ctx))
-        return 1;
-
-    EXIB_Header* header = EXIB_ENC_Encode(ctx);
-    if (EXIB_CheckHeader(header))
-    {
-        puts("TEST: \tERROR: Invalid header!");
-        return 1;
-    }
-
-    uint8_t* bytes = (uint8_t*)(header + 1);
-    if (bytes[0]    != 0x0F  // Field Prefix
-        || bytes[1] != 0x00  // Object Prefix
-        || bytes[2] != 0x00  // Size16
-        || bytes[3] != 0x00) // Size16
-    {
-        puts("TEST: ERROR: Wrong root object definition.");
-        printf("       Got %02x %02x %02x %02x, expected %02x %02x %02x %02x.\n",
-            bytes[0], bytes[1], bytes[2], bytes[3],
-            0x0F, 0, 0, 0);
-        return 1;
-    }
-
-    EXIB_ENC_FreeContext(ctx);
-    return 0;
-}
-
-int Test_EXIB_ENC_Encode_Numbers()
-{
-    EXIB_ENC_Context* ctx = EXIB_ENC_CreateContext(NULL);
-
-    if (CheckEncoderContext(ctx))
-        return 1;
-
-    EXIB_ENC_Field* a = EXIB_ENC_AddField(ctx, NULL, "a", EXIB_TYPE_UINT32);
-    EXIB_ENC_Field* b = EXIB_ENC_AddField(ctx, NULL, "b", EXIB_TYPE_UINT32);
-    EXIB_ENC_Field* c = EXIB_ENC_AddField(ctx, NULL, "c", EXIB_TYPE_INT8);
-
-    EXIB_ENC_SetValue(a, (EXIB_Value){ .uint32 = 0xdeadbeef });
-    EXIB_ENC_SetValue(b, (EXIB_Value){ .uint32 = 0xcafebabe });
-    EXIB_ENC_SetValue(c, (EXIB_Value){ .int8   = 'd' });
-
-    EXIB_Header* header = EXIB_ENC_Encode(ctx);
-    if (EXIB_CheckHeader(header))
-    {
-        puts("TEST: \tERROR: Invalid header!");
-        return 1;
-    }
-
-    if (sizeof(DEC_Numbers) != header->datumSize ||
-        memcmp(header, DEC_Numbers, header->datumSize) != 0)
-    {
-        return 1;
-    }
-
-    EXIB_ENC_FreeContext(ctx);
-    return 0;
-}
 
 int Test_EXIB_ENC_Encode_NumbersAndObjects()
 {
@@ -142,7 +70,7 @@ int Test_EXIB_ENC_Encode_NumbersAndObjects()
         return 1;
     }
 
-    dump(header, "NumbersAndObjects.exib");
+    DumpDatum(header, "NumbersAndObjects.exib");
 
     if (sizeof(DEC_NumbersAndObjects) != header->datumSize ||
         memcmp(header, DEC_NumbersAndObjects, header->datumSize) != 0)
@@ -180,7 +108,7 @@ int Test_EXIB_ENC_Encode_IntArray()
         return 1;
     }
 
-    dump(header, "IntArray.exib");
+    DumpDatum(header, "IntArray.exib");
 
     EXIB_ENC_FreeContext(ctx);
     return 0;
@@ -218,7 +146,7 @@ int Test_EXIB_ENC_Encode_ObjectArray()
         return 1;
     }
 
-    dump(header, "ObjectArray.exib");
+    DumpDatum(header, "ObjectArray.exib");
 
     EXIB_ENC_FreeContext(ctx);
     return 0;
@@ -260,7 +188,7 @@ int Test_EXIB_ENC_Encode_Strings()
         return 1;
     }
 
-    dump(header, "Strings.exib");
+    DumpDatum(header, "Strings.exib");
 
     EXIB_ENC_FreeContext(ctx);
     return 0;
@@ -278,6 +206,7 @@ extern int Test_EXIB_DEC_ResetContext_Overflow();
 extern int Test_EXIB_DEC_FindField();
 extern int Test_EXIB_DEC_FindField_NumbersAndObjects();
 
+/*
 Test tests[] = {
     { "Benchmark", Test_Benchmark },
     { "EXIB_ENC_CreateContext", Test_EXIB_ENC_CreateContext },
@@ -294,49 +223,81 @@ Test tests[] = {
     { "EXIB_DEC_FindField_NumbersAndObjects", Test_EXIB_DEC_FindField_NumbersAndObjects },
     { NULL, NULL }
 };
+*/
 
-int run_test(Test* test)
+static Test* s_TestList = NULL;
+
+void PrintTests()
+{
+    Test* test = s_TestList;
+    while (test != NULL)
+    {
+        printf("    %s\n", test->name);
+        test = test->next;
+    }
+}
+
+void PrintHelp()
+{
+    puts("Usage: ./Test [Test Name]");
+    puts("Available tests:");
+    PrintTests();
+    exit(EXIT_FAILURE);
+}
+
+void AddTest(const char* name,
+             test_fn_t func,
+             test_setup_fn_t funcSetup,
+             test_cleanup_fn_t funcCleanup)
+{
+    Test* test = calloc(sizeof(Test), 1);
+
+    if (!s_TestList)
+        s_TestList = test;
+    else
+    {
+        test->next = s_TestList;
+        s_TestList = test;
+    }
+
+    test->name = name;
+    test->fn = func;
+    test->setupFn = funcSetup;
+    test->cleanupFn = funcCleanup;
+}
+
+int RunTest(Test* test)
 {
     printf("TEST: Running %s.\n", test->name);
 
-    int result = test->fn(rand());
+    void* parameter = NULL;
+    if (test->setupFn)
+        parameter = test->setupFn();
+
+    int result = test->fn(parameter);
     if (result != 0)
         printf("TEST: \tFAILED WITH RESULT %d!\n", result);
     else
         puts("TEST: \tPASSED");
+
+    if (test->cleanupFn)
+        test->cleanupFn(parameter);
+
     return result;
 }
 
-int run_test_by_name(const char* name)
+int RunTestByName(const char* name)
 {
-    Test* test = &tests[0];
+    Test* test = s_TestList;
 
-    while (test->name != NULL)
+    while (test != NULL)
     {
         if (strcmp(name, test->name) == 0)
-            return run_test(test);
-        ++test;
+            return RunTest(test);
+        test = test->next;
     }
 
     return 1;
-}
-
-void print_tests()
-{
-    Test* test = &tests[0];
-    while (test->name != NULL)
-    {
-        printf("    %s\n", test->name);
-        ++test;
-    }
-}
-
-void print_help()
-{
-    puts("Usage: ./Test [Test Name]");
-    puts("Available tests:");
-    print_tests();
-    exit(EXIT_FAILURE);
 }
 
 int main(int argc, const char** argv)
@@ -344,21 +305,9 @@ int main(int argc, const char** argv)
     srand(time(NULL));
 
     if (argc < 2)
-        print_help();
+        PrintHelp();
 
-    if (strcmp(argv[1], "-A") == 0)
-    {
-        Test* test = tests;
-        int result = 0;
+    AddEncoderTests();
 
-        while (test->name != NULL)
-        {
-            int r = run_test(test);
-            if (r != 0)
-                result = r;
-            ++test;
-        }
-    }
-
-    return run_test_by_name(argv[1]);
+    return RunTestByName(argv[1]);
 }

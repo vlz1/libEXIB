@@ -214,7 +214,7 @@ For example, a string of `EXIB_TYPE_INT32` must have a 32-bit null-terminator.
 
 ## String Table
 
-The string table is made up of variably sized entries that contain strings and 
+The string table is made up of variably sized entries that contain TStrings (table strings) and 
 their length. These entries use the following structure:
 
 ```cpp

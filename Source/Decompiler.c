@@ -124,15 +124,15 @@ void EXIB_DCL_EmitDouble(EXIB_DCL_Context* dclCtx, double d)
     EXIB_DCL_Emit(dclCtx, valueBuffer);
 }
 
-void EXIB_DCL_EmitValue(EXIB_DCL_Context* dclCtx, EXIB_TypedValue* typedValue)
+void EXIB_DCL_EmitValue(EXIB_DCL_Context* dclCtx, EXIB_DEC_FieldValue* fieldValue)
 {
-    EXIB_Value* value = typedValue->value;
+    EXIB_Value* value = fieldValue->value;
     EXIB_Type printType = EXIB_TYPE_NULL;
     uint64_t ival = 0;
     float    fval = 0.0f;
     double   dval = 0.0;
 
-    switch (typedValue->type)
+    switch (fieldValue->type)
     {
         case EXIB_TYPE_INT8:
             ival = value->int8;
@@ -212,6 +212,19 @@ void EXIB_DCL_EmitTypeName(EXIB_DCL_Context* dclCtx, EXIB_Type type, int isArray
 
 void EXIB_DCL_EmitObject(EXIB_DCL_Context* dclCtx, EXIB_DEC_Object* object, int indent, int depth);
 
+void EXIB_DCL_EmitArray(EXIB_DCL_Context* dclCtx, EXIB_DEC_Array* array)
+{
+    EXIB_TypedValue typedValue = { .type = EXIB_DEC_ArrayGetType(array) };
+    EXIB_Value* value = NULL;
+    int index;
+
+    while ((index = EXIB_DEC_ArrayNext(dclCtx->decoder, array, &value)) >= 0)
+    {
+        printf("[%d] = %c\n", index, value->uint8);
+    }
+
+}
+
 void EXIB_DCL_EmitField(EXIB_DCL_Context* dclCtx, EXIB_DEC_Object* parentObject, EXIB_DEC_Field field, int indent, int depth)
 {
     int innerIndent = (depth + 1) * indent;
@@ -235,23 +248,17 @@ void EXIB_DCL_EmitField(EXIB_DCL_Context* dclCtx, EXIB_DEC_Object* parentObject,
     }
     else if (field->type == EXIB_TYPE_ARRAY)
     {
-        EXIB_DEC_Array childArray = { };
-        EXIB_DEC_ArrayFromField(dclCtx->decoder, field, &childArray);
-        EXIB_DCL_EmitTypeName(dclCtx, childArray.object.objectPrefix.arrayType, 1);
+        EXIB_DEC_Array array = { };
+        EXIB_DEC_ArrayFromField(dclCtx->decoder, field, &array);
+        EXIB_DCL_EmitTypeName(dclCtx, array.object.objectPrefix.arrayType, 1);
 
-        size_t length;
-        EXIB_Value* value = EXIB_DEC_ArrayBegin(dclCtx->decoder, &childArray, &length);
-        for (int i = 0; i < length; ++i)
-        {
-            printf("[%d] = %c\n", i, value->uint16);
-            value = ((void*)value) + EXIB_DEC_ArrayGetStride(&childArray);
-        }
+        EXIB_DCL_EmitArray(dclCtx, &array);
     }
     else
     {
         EXIB_DCL_EmitTypeName(dclCtx, field->type, 0);
 
-        EXIB_TypedValue value;
+        EXIB_DEC_FieldValue value;
         if (EXIB_DEC_FieldGet(dclCtx->decoder, field, &value) == EXIB_TYPE_NULL)
         {
             EXIB_DCL_Emit(dclCtx, "NULL");

@@ -99,9 +99,10 @@ EXIB_DEC_Array* EXIB_DEC_ArrayFromField(EXIB_DEC_Context* ctx, EXIB_DEC_Field fi
     if (EXIB_DEC_PartialDecodeAggregate(ctx, field, &arrayOut->object) != EXIB_DEC_ERR_Success)
         return NULL;
 
-    // Calculate element count.
-    int elementSize = EXIB_GetTypeSize(arrayOut->object.objectPrefix.arrayType);
-    arrayOut->elements = arrayOut->object.size ? (arrayOut->object.size / elementSize) : 0;
+    // Pre-calculate some useful information.
+    arrayOut->elementSize = EXIB_GetTypeSize(arrayOut->object.objectPrefix.arrayType);
+    arrayOut->elements = arrayOut->object.size ? (arrayOut->object.size / arrayOut->elementSize) : 0;
+    arrayOut->data = (void*)(arrayOut->object.field) + arrayOut->object.dataOffset;
 
     return arrayOut;
 }

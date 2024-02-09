@@ -57,20 +57,27 @@ EXIB_DEC_TString EXIB_DEC_FieldGetName(EXIB_DEC_Context* ctx, EXIB_DEC_Field fie
     return EXIB_DEC_GetStringFromOffset(ctx, EXIB_DEC_GetFieldNameOffset(ctx, field));
 }
 
-EXIB_Type EXIB_DEC_FieldGet(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_TypedValue* valueOut)
+EXIB_Type EXIB_DEC_FieldGet(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_DEC_FieldValue* valueOut)
 {
     EXIB_Type type = EXIB_DEC_FieldGetType(field);
+    valueOut->type = type;
 
-    // These all have their own special functions for reading.
-    if (type == EXIB_TYPE_ARRAY || type == EXIB_TYPE_OBJECT)
+    if (type == EXIB_TYPE_ARRAY)
     {
-        valueOut->type = EXIB_TYPE_NULL;
-        return EXIB_TYPE_NULL;
+        return (EXIB_DEC_ArrayFromField(ctx, field, &valueOut->array) != NULL)
+            ? type
+            : EXIB_TYPE_NULL;
+    }
+    else if (type == EXIB_TYPE_OBJECT)
+    {
+        return (EXIB_DEC_ObjectFromField(ctx, field, &valueOut->object) != NULL)
+               ? type
+               : EXIB_TYPE_NULL;
     }
 
     // TODO: Safety
     size_t dataOffset = EXIB_DEC_GetFieldDataOffset(ctx, field);
     valueOut->type = type;
     valueOut->value = ctx->buffer + dataOffset;
-    return valueOut->type;
+    return type;
 }

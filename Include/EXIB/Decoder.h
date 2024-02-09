@@ -50,8 +50,26 @@ typedef struct _EXIB_DEC_Object
 typedef struct _EXIB_DEC_Array
 {
     EXIB_DEC_Object object;
+    EXIB_Value* data;
     uint32_t elements;
+    uint8_t elementSize;
 } EXIB_DEC_Array;
+
+/** Structure to store the value of a field. */
+typedef struct _EXIB_DEC_FieldValue
+{
+    // Type of the currently-stored value.
+    EXIB_Type type;
+    union
+    {
+        // Pointer to primitive value in decode buffer.
+        EXIB_Value* value;
+        // Decoded object (If type == EXIB_TYPE_OBJECT).
+        EXIB_DEC_Object object;
+        // Decoded array (If type == EXIB_TYPE_ARRAY).
+        EXIB_DEC_Array array;
+    };
+} EXIB_DEC_FieldValue;
 
 #define EXIB_DEC_INVALID_FIELD   ((EXIB_DEC_Field)NULL)
 #define EXIB_DEC_INVALID_STRING  ((EXIB_DEC_TString)NULL)
@@ -154,7 +172,7 @@ extern "C" {
      * @param valueOut Pointer to TypedValue struct. Must not be NULL!
      * @return Type of value, or EXIB_TYPE_NULL if no value could be decoded.
      */
-    EXIB_Type EXIB_DEC_FieldGet(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_TypedValue* valueOut);
+    EXIB_Type EXIB_DEC_FieldGet(EXIB_DEC_Context* ctx, EXIB_DEC_Field field, EXIB_DEC_FieldValue* valueOut);
 
     /**
      * Check if the given field is one of the primitive types.
@@ -235,6 +253,16 @@ extern "C" {
     }
 
     /**
+     * Check if an array is a string.
+     * @param array Decoder array.
+     * @return 1 if the array is a string, 0 otherwise.
+     */
+    static inline int EXIB_DEC_ArrayIsString(EXIB_DEC_Array* array)
+    {
+        return array->object.objectPrefix.arrayString;
+    }
+
+    /**
      * Get the stride (distance between the beginning of each element) of an array.
      * @param array Decoder array.
      * @return Array stride, or 0 if the array is comprised of aggregate types.
@@ -252,6 +280,15 @@ extern "C" {
      * @return Pointer to the beginning of array[i], or NULL on error.
      */
     EXIB_Value* EXIB_DEC_ArrayBegin(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, size_t* lengthOut);
+
+    /**
+     *
+     * @param ctx
+     * @param array
+     * @param valuePointer
+     * @return Index of the current element, or -1 if no elements are left.
+     */
+    int EXIB_DEC_ArrayNext(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, EXIB_Value** valuePointer);
 
     /**
      * Get a pointer to element i of the given array.
