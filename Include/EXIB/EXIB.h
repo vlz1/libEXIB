@@ -73,7 +73,7 @@ typedef union _EXIB_ObjectPrefix
 // String table entry.
 typedef struct _EXIB_StringEntry
 {
-    uint16_t length;
+    uint8_t  length;
     char     string[];
 } EXIB_StringEntry;
 

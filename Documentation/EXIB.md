@@ -220,7 +220,7 @@ their length. These entries use the following structure:
 ```cpp
 struct StringEntry
 {
-    uint16_t length;
+    uint8_t  length;
     char     string[];
 } StringEntry;
 ```

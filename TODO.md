@@ -1,7 +1,6 @@
 # TODO
 
 ## Format
-- Reduce TString max length to 255 characters.
 
 ## Encoder
 
