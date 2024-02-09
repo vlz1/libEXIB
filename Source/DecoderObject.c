@@ -20,11 +20,9 @@
         FIELD_LUT(6, 0), FIELD_LUT(6, 2),
         FIELD_LUT(7, 0), FIELD_LUT(7, 2)
     };
-
-    #define OBJECT_PREFIX(field) (EXIB_ObjectPrefix*)(field + s_FieldSizeLUT[field->byte]);
-#else
-    #define OBJECT_PREFIX(field) (EXIB_ObjectPrefix*)(field + (field->named * 2) + 1);
 #endif
+
+#define OBJECT_PREFIX(field) (EXIB_ObjectPrefix*)(field + (field->named * 2) + 1);
 
 // Calculate the position of a field relative to its parent object.
 static uint32_t EXIB_DEC_ObjectRelativeOffset(EXIB_DEC_Object* object, EXIB_DEC_Field field)
@@ -47,7 +45,7 @@ EXIB_DEC_Error EXIB_DEC_PartialDecodeAggregate(EXIB_DEC_Context* ctx, EXIB_DEC_F
     // TODO: More bounds checking for aggregate decoding.
 
     sizeBytes = 2 + (object->size * 2);
-    objectOut->dataOffset = 2 + (field->named * 2) + sizeBytes; // Field prefix + Object prefix + Name16 + Size16/32
+    objectOut->dataOffset = 2 + (field->named * 2) + sizeBytes + field->padding; // Field prefix + Object prefix + Name16 + Size16/32
 
     if (sizeBytes == 4)
         objectSize = *(uint32_t*)(object + 1);

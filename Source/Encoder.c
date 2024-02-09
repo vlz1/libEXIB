@@ -196,6 +196,7 @@ size_t EXIB_ENC_EncodeSpecialArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array,
 size_t EXIB_ENC_EncodeArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array, size_t offset)
 {
     EXIB_ENC_Field* field = &array->object.field;
+    EXIB_FieldPrefix* fieldPrefix = (EXIB_FieldPrefix*)(ctx->encodeBuffer + offset);
     size_t fieldOffset = offset;
 
     // Write field prefix and name.
@@ -209,7 +210,8 @@ size_t EXIB_ENC_EncodeArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array, size_t
     }
 
     // Calculate size.
-    size_t dataSize = EXIB_GetTypeSize(field->elementType) * EXIB_ENC_ArrayGetSize(array);
+    int typeSize = EXIB_GetTypeSize(field->elementType);
+    size_t dataSize = typeSize * EXIB_ENC_ArrayGetSize(array);
 
     // Write object prefix.
     EXIB_ObjectPrefix objectPrefix = {
@@ -229,6 +231,15 @@ size_t EXIB_ENC_EncodeArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array, size_t
     {
         *(uint16_t*)&ctx->encodeBuffer[offset] = dataSize;
         offset += 2;
+    }
+
+    // Calculate padding.
+    if (typeSize > 1)
+    {
+        int r = (int)offset % typeSize;
+        int padding = (r > 0) ? (typeSize - r) : 0;
+        offset += padding;
+        fieldPrefix->padding = padding;
     }
 
     // Write data.
