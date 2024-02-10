@@ -65,10 +65,18 @@ extern "C" {
      * Create a new object and add it to the end of the array.
      * @param ctx Encoder context.
      * @param array Encoder array.
-     * @param name Name of object, or NULL to leave it unnamed.
      * @return Pointer to newly-added object, or NULL if an error occurred.
      */
-    EXIB_ENC_Object* EXIB_ENC_ArrayAddObject(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array, const char* name);
+    EXIB_ENC_Object* EXIB_ENC_ArrayAddObject(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array);
+
+    /**
+     * Create a new array and add it to the end of the given array.
+     * @param ctx Encoder context.
+     * @param array Encoder array.
+     * @param elementType Array element type.
+     * @return Pointer to newly-added object, or NULL if an error occurred.
+     */
+    EXIB_ENC_Array* EXIB_ENC_ArrayAddArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array, EXIB_Type elementType);
 #ifdef __cplusplus
 }
 #endif

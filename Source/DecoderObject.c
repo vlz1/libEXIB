@@ -45,7 +45,8 @@ EXIB_DEC_Error EXIB_DEC_PartialDecodeAggregate(EXIB_DEC_Context* ctx, EXIB_DEC_F
     // TODO: More bounds checking for aggregate decoding.
 
     sizeBytes = 2 + (object->size * 2);
-    objectOut->dataOffset = 2 + (field->named * 2) + sizeBytes + field->padding; // Field prefix + Object prefix + Name16 + Size16/32
+    // Field prefix + Object prefix + Name16 + Size16/32 + padding
+    objectOut->dataOffset = 2 + (field->named * 2) + sizeBytes + field->padding;
 
     if (sizeBytes == 4)
         objectSize = *(uint32_t*)(object + 1);

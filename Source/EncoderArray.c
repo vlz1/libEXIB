@@ -134,7 +134,12 @@ void* EXIB_ENC_ArrayAppend(EXIB_ENC_Array* array, EXIB_Value value)
     return EXIB_ENC_ArraySet(array, array->elementCount++, value);
 }
 
-EXIB_ENC_Object* EXIB_ENC_ArrayAddObject(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array, const char* name)
+EXIB_ENC_Object* EXIB_ENC_ArrayAddObject(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array)
 {
-    return EXIB_ENC_AddObject(ctx, &array->object, name);
+    return EXIB_ENC_AddObject(ctx, &array->object, NULL);
+}
+
+EXIB_ENC_Array* EXIB_ENC_ArrayAddArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array, EXIB_Type elementType)
+{
+    return EXIB_ENC_AddArray(ctx, &array->object, NULL, elementType);
 }
