@@ -108,9 +108,11 @@ void AddDecoderBenchmarks()
         SetupNumbersDecoder,
         CleanupNumbersDecoder,
         4096);
+    /*
     AddBenchmark("DEC_ArrayNext",
         Benchmark_DEC_ArrayNext,
         SetupStringsDecoder,
         CleanupStringsDecoder,
         4096);
+        */
 }

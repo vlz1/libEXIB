@@ -23,9 +23,7 @@ add_test(NAME "[Encode] EXIB_ENC_Encode (Empty Root)"
     COMMAND EXIB_Test EXIB_ENC_Encode_EmptyRoot)
 add_test(NAME "[Encode] EXIB_ENC_Encode (Numbers And Objects)"
     COMMAND EXIB_Test EXIB_ENC_Encode_NumbersAndObjects)
-add_test(NAME "[Encode] EXIB_ENC_Encode (Int Array)"
-    COMMAND EXIB_Test EXIB_ENC_Encode_IntArray)
-add_test(NAME "[Encode] EXIB_ENC_Encode (Object Array)"
-    COMMAND EXIB_Test EXIB_ENC_Encode_ObjectArray)
-add_test(NAME "[Encode] EXIB_ENC_Encode (Strings)"
-        COMMAND EXIB_Test EXIB_ENC_Encode_Strings)
+add_test(NAME "[Encode] EXIB_ENC_Encode (Float Array)"
+    COMMAND EXIB_Test EXIB_ENC_Encode_Array)
+add_test(NAME "[Encode] EXIB_ENC_Encode (Array of Arrays)"
+    COMMAND EXIB_Test EXIB_ENC_Encode_ArrayOfArrays)

@@ -29,6 +29,7 @@ void AddTest(const char* name,
              test_cleanup_fn_t funcCleanup);
 
 void DumpDatum(EXIB_Header* header, const char* path);
+int CompareDatum(EXIB_Header* header, const uint8_t* sample, size_t sampleSize);
 
 void AddCommonTests();
 void AddEncoderTests();
