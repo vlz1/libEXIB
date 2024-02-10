@@ -89,37 +89,32 @@ size_t EXIB_ENC_EncodeField(EXIB_ENC_Context* ctx, EXIB_ENC_Field* field, size_t
     int typeSize = EXIB_GetTypeSize(field->type);
     int nameSize = (field->nameOffset != EXIB_INVALID_STRING) ? (int)sizeof(exib_string_t) : 0;
     int bytes    = 1 + nameSize + typeSize;
-    EXIB_FieldPrefix fieldPrefix = {
-        .type    = field->type,
-        .named   = nameSize != 0
-    };
 
-    if (typeSize > 1)
-    {
-        int r = ((int)offset + 1 + nameSize) % typeSize;
-        int padding = (r > 0) ? (typeSize - r) : 0;
-        bytes += padding;
-        fieldPrefix.padding = padding;
-    }
+    EXIB_FieldPrefix* fieldPrefix = (EXIB_FieldPrefix*)&ctx->encodeBuffer[offset];
+    fieldPrefix->type = field->type;
+    fieldPrefix->named = nameSize != 0;
 
-    // Write field prefix.
-    ctx->encodeBuffer[offset++] = fieldPrefix.byte;
+    ++offset;
 
     // Write name if one is present.
-    if (fieldPrefix.named)
+    if (nameSize != 0)
     {
         ctx->encodeBuffer[offset] = field->nameOffset & 0xFF;
         ctx->encodeBuffer[offset + 1] = (field->nameOffset >> 8) & 0xFF;
         offset += 2;
     }
 
-    // TODO: Fix padding for arrays and objects.
-    // Add padding bytes if necessary.
-    for (int i = 0; i < fieldPrefix.padding; ++i)
-        ctx->encodeBuffer[offset++] = 0;
-
     if (typeSize > 0)
     {
+        int r = (int)offset % typeSize;
+        int padding = (r > 0) ? (typeSize - r) : 0;
+        bytes += padding;
+        fieldPrefix->padding = padding;
+
+        // Add padding bytes if necessary.
+        for (int i = 0; i < padding; ++i)
+            ctx->encodeBuffer[offset++] = 0;
+
         // Write value.
         *(void**)&ctx->encodeBuffer[offset] = field->value.pointer;
     }
@@ -171,7 +166,7 @@ size_t EXIB_ENC_EncodeSpecialArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array,
     // Loop through object/array child list.
     while (field != NULL)
     {
-        size_t bytes;
+        size_t bytes = 0;
 
         if (field->type != type)
         {
@@ -181,8 +176,9 @@ size_t EXIB_ENC_EncodeSpecialArray(EXIB_ENC_Context* ctx, EXIB_ENC_Array* array,
 
         if (field->type == EXIB_TYPE_OBJECT)
             bytes = EXIB_ENC_EncodeObject(ctx, (EXIB_ENC_Object*)field, offset);
-        else if(field->type == EXIB_TYPE_ARRAY)
+        else if (field->type == EXIB_TYPE_ARRAY)
             bytes = EXIB_ENC_EncodeArray(ctx, (EXIB_ENC_Array*)field, offset);
+
         offset += bytes;
         innerSize += bytes;
         field = field->next;
@@ -294,7 +290,7 @@ EXIB_Header* EXIB_ENC_Encode(EXIB_ENC_Context* ctx)
     size_t stringTableSize = 0;
     size_t offset = sizeof(EXIB_Header);
 
-    // TODO: Add parameter for enabling the extended header.
+    // TODO: Add context option for enabling the extended header.
     offset += EXIB_ENC_EncodeObject(ctx, &ctx->rootObject, offset);
 
     stringTableSize = EXIB_ENC_EncodeStringTable(ctx, offset);
@@ -304,5 +300,6 @@ EXIB_Header* EXIB_ENC_Encode(EXIB_ENC_Context* ctx)
     header->version    = EXIB_VERSION;
     header->datumSize  = offset;
     header->stringSize = stringTableSize;
+    header->checksum   = EXIB_CRC32C(0, header, header->datumSize);
     return header;
 }

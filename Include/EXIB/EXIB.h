@@ -33,7 +33,7 @@ typedef struct _EXIB_Header
     uint16_t stringSize;   // Size of string table in bytes.
     uint8_t  extendedSize; // Size of extended header if present.
     uint8_t  reserved;     // Reserved for future use.
-    uint32_t checksum;     // CRC-32 of entire datum, with this field initialized to 0.
+    uint32_t checksum;     // CRC-32C of entire datum, with this field initialized to 0.
 } EXIB_Header;
 
 typedef struct _EXIB_ExtHeader
@@ -85,7 +85,7 @@ typedef struct _EXIB_BlobEntry
     uint16_t reserved2;  // Reserved for future use.
     uint32_t storedSize; // Size of the possibly compressed data in bytes.
     uint32_t realSize;   // Size of the data while uncompressed in bytes.
-    uint32_t checksum;   // CRC32 checksum of uncompressed data.
+    uint32_t checksum;   // CRC-32C checksum of uncompressed data.
     uint8_t  data[];
 } EXIB_BlobEntry;
 
@@ -185,6 +185,15 @@ extern "C" {
      * @return FNV-1 hash of string.
      */
     uint32_t EXIB_StringHashAndLength(const char* str, uint32_t* lengthOut);
+
+    /**
+     * Calculate the CRC32C checksum of a buffer.
+     * @param crc Initial value (Set to 0 unless you have a good reason not to).
+     * @param buffer Buffer to calculate checksum for.
+     * @param size Size of buffer.
+     * @return CRC32C checksum.
+     */
+    uint32_t EXIB_CRC32C(uint32_t crc, const void* buffer, size_t size);
 
     /**
      * Validate an EXIB header.
