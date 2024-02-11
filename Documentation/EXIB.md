@@ -36,7 +36,7 @@ struct Header
     uint16_t stringSize;   // Size of string table in bytes.
     uint8_t  extendedSize; // Size of extended header if present.
     uint8_t  reserved;     // Reserved for future use.
-    uint32_t checksum;     // CRC-32 of entire datum, with this field initialized to 0.
+    uint32_t checksum;     // CRC-32C of entire datum, with this field initialized to 0.
 };
 ```
 
@@ -259,7 +259,7 @@ struct BlobEntry
     uint16_t reserved2;  // Reserved for future use.
     uint32_t storedSize; // Size of the possibly compressed data in bytes.
     uint32_t realSize;   // Size of the data while uncompressed in bytes.
-    uint32_t checksum;   // CRC32 checksum of the uncompressed data.
+    uint32_t checksum;   // CRC-32C checksum of the uncompressed data.
     uint8_t  data[];
 } BlobEntry;
 ```
