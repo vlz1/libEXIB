@@ -215,12 +215,12 @@ void EXIB_DCL_EmitObject(EXIB_DCL_Context* dclCtx, EXIB_DEC_Object* object, int 
 void EXIB_DCL_EmitArray(EXIB_DCL_Context* dclCtx, EXIB_DEC_Array* array)
 {
     EXIB_TypedValue typedValue = { .type = EXIB_DEC_ArrayGetType(array) };
-    EXIB_Value* value = NULL;
+    EXIB_DEC_FieldValue value = { };
     int index;
 
     while ((index = EXIB_DEC_ArrayNext(dclCtx->decoder, array, &value)) >= 0)
     {
-        printf("[%d] = %c\n", index, value->uint8);
+        //printf("[%d] = %c\n", index, value->uint8);
     }
 
 }
