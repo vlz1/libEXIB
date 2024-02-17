@@ -64,7 +64,7 @@ EXIB_DEC_Error EXIB_DEC_ResetContext(EXIB_DEC_Context* ctx,
      */
 
     const EXIB_Header* header = ctx->buffer;
-    if ((bufferSize < expectedSize) || EXIB_CheckHeader(header)) // Ensure buffer meets minimum size and validate the header.
+    if ((bufferSize < expectedSize) || EXIB_CheckHeader(header, ctx->bufferSize)) // Ensure buffer meets minimum size and validate the header.
         return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_InvalidHeader);
     else if (bufferSize < header->datumSize) // Make sure we have the whole datum.
         return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_BufferTooSmall);
