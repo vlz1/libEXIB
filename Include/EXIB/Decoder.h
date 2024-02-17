@@ -12,7 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef enum
+typedef enum _EXIB_DEC_Error
 {
     EXIB_DEC_ERR_Success           = 0,
     EXIB_DEC_ERR_InvalidHeader     = 1, // Header magic is wrong or fields are invalid.
@@ -25,6 +25,7 @@ typedef enum
     EXIB_DEC_ERR_ArrayExpected     = 8, // An array was expected.
     EXIB_DEC_ERR_StringExpected    = 9, // A string was expected.
     EXIB_DEC_ERR_InvalidArrayIndex = 10, // Array index out of bounds.
+    EXIB_DEC_ERR_FieldNotFound     = 11, // Named field not found.
 } EXIB_DEC_Error;
 
 /** Opaque decoder context handle. */

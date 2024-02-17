@@ -13,10 +13,12 @@ static const char* s_DecoderErrors[] = {
     "Bad checksum",
     "Invalid root object",
     "Out of bounds",
+    "Aggregate type expected",
     "Object expected",
     "Array expected",
     "String expected",
-    "Array index out of bounds"
+    "Array index out of bounds",
+    "Named field not found"
 };
 
 static EXIB_DEC_Options s_DefaultOptions = { };

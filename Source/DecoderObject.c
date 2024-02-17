@@ -211,10 +211,10 @@ EXIB_DEC_Error EXIB_DEC_FindObject(EXIB_DEC_Context* ctx,
     EXIB_DEC_Field field = EXIB_DEC_FindField(ctx, parent, name);
 
     if (field == EXIB_DEC_INVALID_FIELD)
-        return EXIB_DEC_GetLastError(ctx);
+        return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_FieldNotFound);
 
     if (!EXIB_DEC_ObjectFromField(ctx, field, objectOut))
-        return EXIB_DEC_GetLastError(ctx);
+        return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_ObjectExpected);
     
     return EXIB_DEC_SetError(ctx, EXIB_DEC_ERR_Success);
 }
