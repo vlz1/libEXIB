@@ -237,7 +237,7 @@ extern "C" {
      * @param array Decoder array.
      * @return Number of elements in array.
      */
-    static inline ssize_t EXIB_DEC_ArrayGetLength(EXIB_DEC_Array* array)
+    static inline int EXIB_DEC_ArrayGetLength(EXIB_DEC_Array* array)
     {
         return array->elements;
     }
