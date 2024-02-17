@@ -106,7 +106,7 @@ uint32_t EXIB_CRC32C(uint32_t crc, const void* buffer, size_t size)
     return ~crc;
 }
 
-int EXIB_CheckHeader(const EXIB_Header* header)
+int EXIB_CheckHeader(const EXIB_Header* header, size_t bufferSize)
 {
     if (header->magic != EXIB_MAGIC)
         return 1;
@@ -118,7 +118,7 @@ int EXIB_CheckHeader(const EXIB_Header* header)
         + header->extendedSize
         + header->stringSize
         + 4;
-    if (header->datumSize < minimumSize)
+    if (header->datumSize < minimumSize || header->datumSize > bufferSize)
         return 1;
 
     EXIB_Header checksumHeader = *header;

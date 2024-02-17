@@ -198,9 +198,10 @@ extern "C" {
     /**
      * Validate an EXIB header.
      * @param header Header to validate.
+     * @param bufferSize Size of the buffer containing the header.
      * @return 0 on success, 1 on error.
      */
-    int EXIB_CheckHeader(const EXIB_Header* header);
+    int EXIB_CheckHeader(const EXIB_Header* header, size_t bufferSize);
 
     /**
      * Specify the memory allocation functions to be used by the library.
