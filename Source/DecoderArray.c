@@ -39,33 +39,67 @@ EXIB_Value* EXIB_DEC_ArrayBegin(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, si
     return array->data;
 }
 
-int EXIB_DEC_ArrayNext(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, EXIB_Value** value)
+static int EXIB_DEC_ArrayDecodeNext(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, EXIB_FieldPrefix* field, EXIB_DEC_FieldValue* value)
 {
-    void* val = *value;
-    ptrdiff_t pointerDiff;
-    intptr_t currentIndex;
-    int nextIndex;
+    value->type = array->object.objectPrefix.arrayType;
+    if (value->type == EXIB_TYPE_ARRAY)
+    {
+        return (EXIB_DEC_ArrayFromField(ctx, field, &value->array) == NULL)
+            ? -1 : 0;
+    }
+    else if (value->type == EXIB_TYPE_OBJECT)
+    {
+        return (EXIB_DEC_ObjectFromField(ctx, field, &value->object) == NULL)
+            ? -1 : 0;
+    }
 
-    *value = NULL;
-    if (val == NULL)
+    return -1;
+}
+
+static int EXIB_DEC_ArraySpecialNext(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, EXIB_DEC_FieldValue* value)
+{
+    // Position of current field prefix within array data.
+    EXIB_FieldPrefix* field = value->object.field;
+    EXIB_Type type = array->object.objectPrefix.arrayType;
+    if (field == NULL)
+    {
+        // TODO: Safety!
+        field = (EXIB_FieldPrefix*)array->data;
+        return EXIB_DEC_ArrayDecodeNext(ctx, array, field, value);
+    }
+
+    return EXIB_DEC_ArrayDecodeNext(ctx, array, field, value);
+}
+
+int EXIB_DEC_ArrayNext(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, EXIB_DEC_FieldValue* value)
+{
+    // Use a different function for arrays of arrays/arrays of objects.
+    if (array->elementSize == 0)
+        return EXIB_DEC_ArraySpecialNext(ctx, array, value);
+
+    // Position of current element within array data.
+    void* position = value->value;
+    if (position == NULL)
     {
         if (array->elements == 0)
             return -1;
 
-        *value = array->data;
+        // Return first element of array.
+        value->value = array->data;
         return 0;
     }
 
-    // TODO: Handle arrays of objects/arrays of arrays.
-    assert(array->elementSize != 0);
+    ptrdiff_t elementOffset = (ptrdiff_t)position - (ptrdiff_t)array->data;
+    if (elementOffset < 0)
+        return -1; // Undershot the array, bad pointer!
 
-    pointerDiff = (ptrdiff_t)val - (ptrdiff_t)array->data;
-    currentIndex = (pointerDiff != 0) ? (pointerDiff / array->elementSize) : 0;
-    nextIndex = (int)currentIndex + 1;
-    if (currentIndex < 0 || nextIndex >= array->elements)
-        return -1;
+    ptrdiff_t currentIndex = (elementOffset != 0) ? (elementOffset / array->elementSize) : 0;
+    int nextIndex = (int)(currentIndex + 1);
+    if (nextIndex >= array->elements)
+        return -1; // Out of bounds or the array ended.
 
-    *value = val + EXIB_DEC_ArrayGetStride(array);
+    value->type = array->object.objectPrefix.arrayType;
+    value->value = position + EXIB_DEC_ArrayGetStride(array);
     return nextIndex;
 }
 

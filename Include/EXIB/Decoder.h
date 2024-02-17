@@ -39,7 +39,7 @@ typedef EXIB_FieldPrefix* EXIB_DEC_Field;
 /** Container for a partially decoded object. */
 typedef struct _EXIB_DEC_Object
 {
-    EXIB_DEC_Field field; // Object's field.
+    EXIB_FieldPrefix* field; // Pointer to object's field prefix.
     uint32_t size; // Size of object data in bytes.
     uint8_t dataOffset; // Offset from `field` to beginning of object data.
     EXIB_ObjectPrefix objectPrefix; // Original object prefix.
@@ -51,7 +51,7 @@ typedef struct _EXIB_DEC_Array
 {
     EXIB_DEC_Object object;
     EXIB_Value* data;
-    uint32_t elements;
+    int elements;
     uint8_t elementSize;
 } EXIB_DEC_Array;
 
@@ -237,7 +237,7 @@ extern "C" {
      * @param array Decoder array.
      * @return Number of elements in array.
      */
-    static inline size_t EXIB_DEC_ArrayGetLength(EXIB_DEC_Array* array)
+    static inline ssize_t EXIB_DEC_ArrayGetLength(EXIB_DEC_Array* array)
     {
         return array->elements;
     }
@@ -285,10 +285,10 @@ extern "C" {
      *
      * @param ctx
      * @param array
-     * @param valuePointer
+     * @param value
      * @return Index of the current element, or -1 if no elements are left.
      */
-    int EXIB_DEC_ArrayNext(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, EXIB_Value** valuePointer);
+    int EXIB_DEC_ArrayNext(EXIB_DEC_Context* ctx, EXIB_DEC_Array* array, EXIB_DEC_FieldValue* value);
 
     /**
      * Get a pointer to element i of the given array.
