@@ -84,7 +84,7 @@ void CleanupStringsDecoder(void* parameter)
 void Benchmark_DEC_ArrayNext(void* parameter)
 {
     StringsBenchmarkData* data = parameter;
-    EXIB_Value* value = NULL;
+    EXIB_DEC_FieldValue value = { };
 
     while (EXIB_DEC_ArrayNext(data->ctx, &data->string2, &value) >= 0)
         ;

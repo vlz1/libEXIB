@@ -65,36 +65,7 @@ int Test_EXIB_DEC_CreateContext_Invalid()
     return 0;
 }
 
-/**
- * Call ResetContext on a malicious or malformed payload.
- */
-int Test_EXIB_DEC_ResetContext_Overflow()
-{
-    EXIB_DEC_Context* ctx = EXIB_DEC_CreateContext(NULL);
-    uint8_t buffer[32] = { 0 };
-    EXIB_Header* header = (EXIB_Header*)buffer;
-    uint8_t* p = buffer + sizeof(EXIB_Header);
-
-    header->magic     = EXIB_MAGIC;
-    header->version   = EXIB_VERSION;
-    header->datumSize = 22;
-    
-    *(p++) = 0x0F; // Unnamed object
-    *(p++) = 0x80; // Size32
-    *((uint32_t*)p) = 1;
-
-    EXIB_DEC_Error result = EXIB_DEC_ResetContext(ctx, buffer, sizeof(buffer));
-    
-    if (result == EXIB_DEC_ERR_Success)
-        return 1;
-    
-    printf("TEST: \tProperly rejected with error '%s'\n", EXIB_DEC_GetLastErrorName(ctx));
-
-    EXIB_DEC_FreeContext(ctx);
-    return 0;
-}
-
-int Test_EXIB_DEC_FindField()
+int Test_EXIB_DEC_FindField_Numbers()
 {
     EXIB_DEC_Context* ctx = EXIB_DEC_CreateBufferedContext(DEC_Numbers, 
         sizeof(DEC_Numbers), 
