@@ -7,7 +7,10 @@ static int CheckEncoderContext(EXIB_ENC_Context* ctx)
         return 1;
 
     if (EXIB_ENC_GetLastError(ctx) != EXIB_ENC_ERR_Success)
+    {
+        EXIB_ENC_FreeContext(ctx);
         return 1;
+    }
 
     return 0;
 }
@@ -42,7 +45,7 @@ static int Test_EXIB_ENC_Encode_EmptyRoot(void* parameter)
 {
     EXIB_ENC_Context* ctx = parameter;
     EXIB_Header* header = EXIB_ENC_Encode(ctx);
-    if (EXIB_CheckHeader(header))
+    if (EXIB_CheckHeader(header, header->datumSize))
     {
         puts("TEST: \tERROR: Invalid header!");
         return 1;
@@ -78,7 +81,7 @@ static int Test_EXIB_ENC_Encode_Numbers(void* parameter)
     EXIB_ENC_SetValue(c, (EXIB_Value){ .uint16 = 0xc001 });
 
     EXIB_Header* header = EXIB_ENC_Encode(ctx);
-    if (EXIB_CheckHeader(header))
+    if (EXIB_CheckHeader(header, header->datumSize))
     {
         puts("TEST: \tERROR: Invalid header!");
         return 1;
@@ -118,7 +121,7 @@ int Test_EXIB_ENC_Encode_NumbersAndObjects(void* parameter)
     EXIB_ENC_SetValue(z, (EXIB_Value){ .float32 = 2.0f });
 
     EXIB_Header* header = EXIB_ENC_Encode(ctx);
-    if (EXIB_CheckHeader(header))
+    if (EXIB_CheckHeader(header, header->datumSize))
     {
         puts("TEST: \tERROR: Invalid header!");
         return 1;
@@ -144,7 +147,7 @@ int Test_EXIB_ENC_Encode_Array(void* parameter)
     }
 
     EXIB_Header* header = EXIB_ENC_Encode(ctx);
-    if (EXIB_CheckHeader(header))
+    if (EXIB_CheckHeader(header, header->datumSize))
     {
         puts("TEST: \tERROR: Invalid header!");
         return 1;
@@ -176,7 +179,7 @@ int Test_EXIB_ENC_Encode_ArrayOfArrays(void* parameter)
     EXIB_ENC_ArrayAppend(array2, (EXIB_Value){ .float32 = 4.0f });
 
     EXIB_Header* header = EXIB_ENC_Encode(ctx);
-    if (EXIB_CheckHeader(header))
+    if (EXIB_CheckHeader(header, header->datumSize))
     {
         puts("TEST: \tERROR: Invalid header!");
         return 1;

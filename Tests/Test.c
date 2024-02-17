@@ -142,6 +142,7 @@ int main(int argc, const char** argv)
 
     AddTest("Benchmark", Test_Benchmark, NULL, NULL);
     AddEncoderTests();
+    AddDecoderTests();
 
     return RunTestByName(argv[1]);
 }
