@@ -1,4 +1,5 @@
-add_executable(EXIB_Test Test.c Tests_ENC.c Tests_DEC.c Test.h Samples.h
+add_executable(EXIB_Test
+    Test.c Tests_ENC.c Tests_DEC.c Test.h Samples.h
     Benchmark.c Benchmark_ENC.c Benchmark_DEC.c
     Benchmark.h)
 target_link_libraries(EXIB_Test PUBLIC EXIB)
