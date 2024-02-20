@@ -1,15 +1,10 @@
-#include <stdint.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <EXIB/EXIB.h>
-#include <EXIB/Encoder.h>
-#include <EXIB/Decoder.h>
 #include "Benchmark.h"
-#include "EXIB/EncoderArray.h"
 #include "Test.h"
-#include "Test_DEC.h"
 
 void DumpDatum(EXIB_Header* header, const char* path)
 {
@@ -32,31 +27,6 @@ int Test_Benchmark()
     RunBenchmarks();
     return 0;
 }
-
-extern int Test_EXIB_DEC_CreateContext();
-extern int Test_EXIB_DEC_CreateContext_Invalid();
-extern int Test_EXIB_DEC_ResetContext_Overflow();
-extern int Test_EXIB_DEC_FindField();
-extern int Test_EXIB_DEC_FindField_NumbersAndObjects();
-
-/*
-Test tests[] = {
-    { "Benchmark", Test_Benchmark },
-    { "EXIB_ENC_CreateContext", Test_EXIB_ENC_CreateContext },
-    { "EXIB_ENC_Encode_Numbers", Test_EXIB_ENC_Encode_Numbers },
-    { "EXIB_ENC_Encode_EmptyRoot", Test_EXIB_ENC_Encode_EmptyRoot },
-    { "EXIB_ENC_Encode_NumbersAndObjects", Test_EXIB_ENC_Encode_NumbersAndObjects },
-    { "EXIB_ENC_Encode_IntArray", Test_EXIB_ENC_Encode_IntArray },
-    { "EXIB_ENC_Encode_ObjectArray", Test_EXIB_ENC_Encode_ObjectArray },
-    { "EXIB_ENC_Encode_Strings", Test_EXIB_ENC_Encode_Strings },
-    { "EXIB_DEC_CreateContext", Test_EXIB_DEC_CreateContext },
-    { "EXIB_DEC_CreateContext_Invalid", Test_EXIB_DEC_CreateContext_Invalid },
-    { "EXIB_DEC_ResetContext_Overflow", Test_EXIB_DEC_ResetContext_Overflow },
-    { "EXIB_DEC_FindField", Test_EXIB_DEC_FindField },
-    { "EXIB_DEC_FindField_NumbersAndObjects", Test_EXIB_DEC_FindField_NumbersAndObjects },
-    { NULL, NULL }
-};
-*/
 
 static Test* s_TestList = NULL;
 
